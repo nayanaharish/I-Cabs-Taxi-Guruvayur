@@ -1,6 +1,13 @@
-
+//import env file
+require('dotenv').config();
 //import express
 const express = require('express');
+
+//import db connection to server file
+const dbConnect = require('./config/db')
+
+//call dbconnect 
+dbConnect();
 
 
 
