@@ -34,6 +34,8 @@ app.get('/',(req,res)=>{
 app.use('/api/users',userRoutes);
 
 
+
+
 //start server
 
 app.listen(PORT,()=>{

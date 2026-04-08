@@ -5,12 +5,22 @@ const express = require('express');
 const router = express.Router();
 
 // Import controller function (will handle business logic)
-const { registerUser } = require('../controllers/userController');
+const { registerUser ,loginUser} = require('../controllers/userController');
+
+
 
 // Define POST route for user registration
 // When client sends request to /api/users/register,
 // registerUser controller will handle it
 router.post('/register', registerUser);
+
+//define POST route for user login
+//when client sends request to /api/users/login ,
+//loginUser controller will handle it
+
+router.post('/login',loginUser);
+
+
 
 // Export router to use in main server file
 module.exports = router;

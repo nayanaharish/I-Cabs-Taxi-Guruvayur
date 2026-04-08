@@ -46,5 +46,46 @@ const registerUser = async (req, res) => {
   }
 };
 
+// Controller function to handle user login
+const loginUser = async (req, res) => {
+  try {
+    // Step 1: Extract email and password from request body
+    const { email, password } = req.body;
+
+    // Step 2: Validate input fields
+    // If email or password is missing, return error
+    if (!email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // Step 3: Find user in database using email
+    const user = await User.findOne({ email });
+
+    // If user is not found, return error
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    // Step 4: Compare entered password with hashed password in DB
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    // If password does not match, return error
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // Step 5: If login successful, send success response
+    return res.status(200).json({
+      message: "Login successful"
+      // Later: we will add token here (JWT)
+    });
+
+  } catch (error) {
+    // Step 6: Handle server errors
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
 // Export controller to use in routes
-module.exports = { registerUser };
+module.exports = { registerUser,loginUser };
