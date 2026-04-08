@@ -107,5 +107,13 @@ const loginUser = async (req, res) => {
   }
 };
 
+
+const testUser = (req,res)=>
+{
+    console.log(req.user);
+    
+
+    return res.status(200).json({message:"authenticated"});
+}
 // Export controllers
-module.exports = { registerUser, loginUser };
+module.exports = { registerUser, loginUser ,testUser};
