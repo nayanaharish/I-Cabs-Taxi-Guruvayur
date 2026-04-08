@@ -7,6 +7,7 @@ const router = express.Router();
 // Import controller function (will handle business logic)
 const { registerUser ,loginUser ,testUser} = require('../controllers/userController');
 const verifyToken = require('../middleware/authMiddleware');
+const verifyAdmin = require('../middleware/roleMiddleware');
 
 
 
@@ -21,7 +22,7 @@ router.post('/register', registerUser);
 
 router.post('/login',loginUser);
 
-router.post('/test',verifyToken,testUser)
+router.post('/test',verifyToken,verifyAdmin,testUser)
 
 
 
