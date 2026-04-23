@@ -9,6 +9,10 @@ const dbConnect = require('./config/db')
 //import userRoutes
 const userRoutes = require('./routes/userRoutes')
 
+//import packageRoute
+
+const packageRotes = require('./routes/packageRoutes')
+
 //call dbconnect 
 dbConnect();
 
@@ -33,7 +37,7 @@ app.get('/',(req,res)=>{
 
 app.use('/api/users',userRoutes);
 
-
+app.use('/api/package',packageRotes);
 
 
 //start server
