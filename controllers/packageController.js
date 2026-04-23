@@ -43,4 +43,29 @@ const createPackage = async (req, res) => {
   }
 };
 
-module.exports = { createPackage };
+
+
+// Controller to get all active packages (public)
+const getPackages = async (req, res) => {
+  try {
+    // Step 1: Fetch active packages from DB
+    const packages = await Package.find({ isActive: true });
+
+    // Step 2: Send response (even if empty array)
+    return res.status(200).json({
+      message: "Packages fetched successfully",
+      packages: packages,
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    // Step 3: Handle server error
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
+
+module.exports = { createPackage ,getPackages};

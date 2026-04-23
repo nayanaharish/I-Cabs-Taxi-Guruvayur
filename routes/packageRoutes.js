@@ -5,7 +5,7 @@ const express = require('express');
 const router = express.Router();
 
 // Import controller (destructure correctly)
-const { createPackage } = require('../controllers/packageController');
+const { createPackage ,getPackages } = require('../controllers/packageController');
 
 // Import middleware
 const verifyToken = require('../middleware/authMiddleware');
@@ -16,5 +16,7 @@ const verifyAdmin = require('../middleware/roleMiddleware');
 // Flow: auth → role → controller
 router.post('/', verifyToken, verifyAdmin, createPackage);
 
+//GET /api/packages
+router.get('/',getPackages)
 // Export router
 module.exports = router;

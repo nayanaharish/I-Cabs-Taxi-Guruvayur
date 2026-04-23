@@ -11,7 +11,7 @@ const userRoutes = require('./routes/userRoutes')
 
 //import packageRoute
 
-const packageRotes = require('./routes/packageRoutes')
+const packageRoutes = require('./routes/packageRoutes')
 
 //call dbconnect 
 dbConnect();
@@ -37,7 +37,7 @@ app.get('/',(req,res)=>{
 
 app.use('/api/users',userRoutes);
 
-app.use('/api/package',packageRotes);
+app.use('/api/packages',packageRoutes);
 
 
 //start server
