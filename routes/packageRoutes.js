@@ -5,7 +5,7 @@ const express = require('express');
 const router = express.Router();
 
 // Import controller (destructure correctly)
-const { createPackage ,getPackages } = require('../controllers/packageController');
+const { createPackage ,getPackages ,getPackageById ,updatePackage} = require('../controllers/packageController');
 
 // Import middleware
 const verifyToken = require('../middleware/authMiddleware');
@@ -18,5 +18,13 @@ router.post('/', verifyToken, verifyAdmin, createPackage);
 
 //GET /api/packages
 router.get('/',getPackages)
+
+//get single package by id
+router.get('/:id',getPackageById)
+
+//update package
+router.put('/:id',verifyToken,verifyAdmin,updatePackage)
+
+
 // Export router
 module.exports = router;
