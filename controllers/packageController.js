@@ -164,4 +164,57 @@ const updatePackage = async (req, res) => {
   }
 };
 
-module.exports = { createPackage ,getPackages,getPackageById,updatePackage};
+
+
+// Controller to soft delete package (Admin only)
+const deletePackage = async (req, res) => {
+  try {
+    // Step 1: Get ID from params
+    const { id } = req.params;
+
+    // Step 2: Validate MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        message: "Invalid package ID",
+      });
+    }
+
+    // Step 3: Find package
+    const packageToDelete = await Package.findById(id);
+
+    // Step 4: Check if package exists
+    if (!packageToDelete) {
+      return res.status(404).json({
+        message: "Package not found",
+      });
+    }
+
+    // Step 5: Check if already inactive
+    if (!packageToDelete.isActive) {
+      return res.status(400).json({
+        message: "Package is already inactive",
+      });
+    }
+
+    // Step 6: Soft delete (set isActive = false)
+    const updatedPackage = await Package.findByIdAndUpdate(
+      id,
+      { isActive: false },
+      { new: true }
+    );
+
+    // Step 7: Return response
+    return res.status(200).json({
+      message: "Package deleted successfully",
+      package: updatedPackage,
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+module.exports = { createPackage ,getPackages,getPackageById,updatePackage,deletePackage};
