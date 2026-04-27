@@ -5,7 +5,7 @@ const express = require('express');
 const router = express.Router();
 
 // Import controller (destructure correctly)
-const { createPackage ,getPackages ,getPackageById ,updatePackage ,deletePackage} = require('../controllers/packageController');
+const { createPackage ,getPackages ,getPackageById ,updatePackage ,deletePackage ,restorePackage} = require('../controllers/packageController');
 
 // Import middleware
 const verifyToken = require('../middleware/authMiddleware');
@@ -28,6 +28,11 @@ router.put('/:id',verifyToken,verifyAdmin,updatePackage)
 //delete(soft delete) package
 
 router.delete('/:id',deletePackage)
+
+
+//restore package
+
+router.patch('/:id/restore',restorePackage)
 
 // Export router
 module.exports = router;

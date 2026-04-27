@@ -217,4 +217,55 @@ const deletePackage = async (req, res) => {
     });
   }
 };
-module.exports = { createPackage ,getPackages,getPackageById,updatePackage,deletePackage};
+
+const restorePackage = async (req, res) => {
+  try {
+    // Step 1: Get ID from params
+    const { id } = req.params;
+
+    // Step 2: Validate MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        message: "Invalid package ID",
+      });
+    }
+
+    // Step 3: Find package
+    const packageToRestore = await Package.findById(id);
+
+    // Step 4: Check existence
+    if (!packageToRestore) {
+      return res.status(404).json({
+        message: "Package not found",
+      });
+    }
+
+    // Step 5: Check if already active
+    if (packageToRestore.isActive) {
+      return res.status(400).json({
+        message: "Package is already active",
+      });
+    }
+
+    // Step 6: Restore package
+    const restoredPackage = await Package.findByIdAndUpdate(
+      id,
+      { isActive: true },
+      { new: true, runValidators: true }
+    );
+
+    // Step 7: Return response
+    return res.status(200).json({
+      message: "Package restored successfully",
+      package: restoredPackage,
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+module.exports = { createPackage ,getPackages,getPackageById,updatePackage,deletePackage,restorePackage};
