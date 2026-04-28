@@ -46,29 +46,75 @@ const createPackage = async (req, res) => {
 
 
 
-// Controller to get all active packages (public)
+// // Controller to get all active packages (public)
+// const getPackages = async (req, res) => {
+//   try {
+//     // Step 1: Fetch active packages from DB
+//     const packages = await Package.find({ isActive: true });
+
+//     // Step 2: Send response (even if empty array)
+//     return res.status(200).json({
+//       message: "Packages fetched successfully",
+//       packages: packages,
+//     });
+
+//   } catch (error) {
+//     console.error(error);
+
+//     // Step 3: Handle server error
+//     return res.status(500).json({
+//       message: "Internal server error",
+//     });
+//   }
+// };
+
 const getPackages = async (req, res) => {
   try {
-    // Step 1: Fetch active packages from DB
-    const packages = await Package.find({ isActive: true });
+    // Step 1: Extract query params
+    const { active, limit, page } = req.query;
 
-    // Step 2: Send response (even if empty array)
+    // Step 2: Build filter
+    const filter = {};
+
+    if (active !== undefined) {
+      filter.isActive = active === "true";
+    }
+
+    // Step 3: Convert to numbers with defaults
+    const pageNum = Number(page) || 1;
+    const limitNum = Number(limit) || 5;
+
+    // Step 4: Calculate skip
+    const skip = (pageNum - 1) * limitNum;
+
+    // Step 5: Fetch data
+    const packages = await Package.find(filter)
+      .skip(skip)
+      .limit(limitNum);
+
+    // Step 6: Handle empty result
+    if (packages.length === 0) {
+      return res.status(200).json({
+        message: "No packages found",
+        packages: [],
+      });
+    }
+
+    // Step 7: Return response
     return res.status(200).json({
-      message: "Packages fetched successfully",
+      page: pageNum,
+      limit: limitNum,
+      count: packages.length,
       packages: packages,
     });
 
   } catch (error) {
     console.error(error);
-
-    // Step 3: Handle server error
     return res.status(500).json({
       message: "Internal server error",
     });
   }
-};
-
-
+}
 
 // Controller to get package by ID
 const getPackageById = async (req, res) => {
@@ -268,4 +314,6 @@ const restorePackage = async (req, res) => {
     });
   }
 };
+
+
 module.exports = { createPackage ,getPackages,getPackageById,updatePackage,deletePackage,restorePackage};
