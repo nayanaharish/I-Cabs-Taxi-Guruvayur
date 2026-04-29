@@ -10,25 +10,34 @@ const Vehicle = require("../models/Vehicle");
 */
 const createVehicle = async (req, res) => {
   try {
-    const { name, type, priceMultiplier } = req.body;
+    const { name, type, priceMultiplier, seatingCapacity } = req.body;
 
     // Step 1: Validate required fields
-    if (!name || !type || priceMultiplier === undefined) {
+    if (!name || !type || priceMultiplier === undefined || seatingCapacity === undefined) {
       return res.status(400).json({
         message: "All fields are required",
       });
     }
 
-    // Step 2: Validate priceMultiplier (convert + check)
+    // Step 2: Validate priceMultiplier
     const multiplier = Number(priceMultiplier);
 
     if (isNaN(multiplier) || multiplier < 1) {
       return res.status(400).json({
-        message: "priceMultiplier must be a number greater than or equal to 1",
+        message: "priceMultiplier must be a number >= 1",
       });
     }
 
-    // Step 3: Validate vehicle type (extra safety)
+    // Step 3: Validate seatingCapacity
+    const seats = Number(seatingCapacity);
+
+    if (isNaN(seats) || seats < 1) {
+      return res.status(400).json({
+        message: "seatingCapacity must be a valid number",
+      });
+    }
+
+    // Step 4: Validate vehicle type
     const validTypes = ["sedan", "suv", "luxury"];
 
     if (!validTypes.includes(type)) {
@@ -37,14 +46,14 @@ const createVehicle = async (req, res) => {
       });
     }
 
-    // Step 4: Create vehicle
+    // Step 5: Create vehicle
     const vehicle = await Vehicle.create({
       name,
       type,
       priceMultiplier: multiplier,
+      seatingCapacity: seats,
     });
 
-    // Step 5: Send response
     return res.status(201).json({
       message: "Vehicle created successfully",
       vehicle,
@@ -64,7 +73,6 @@ const createVehicle = async (req, res) => {
 |--------------------------------------------------------------------------
 | GET VEHICLES (Public)
 |--------------------------------------------------------------------------
-| Returns active vehicles (latest first)
 */
 const getVehicles = async (req, res) => {
   try {
@@ -84,6 +92,5 @@ const getVehicles = async (req, res) => {
     });
   }
 };
-
 
 module.exports = { createVehicle, getVehicles };

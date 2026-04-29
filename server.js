@@ -16,6 +16,9 @@ const packageRoutes = require('./routes/packageRoutes')
 //import vehicleRoutes
 const vehicleRoutes = require('./routes/vehicleRoutes')
 
+
+const bookingRoutes = require("./routes/bookingRoutes");
+
 //call dbconnect 
 dbConnect();
 
@@ -43,6 +46,10 @@ app.use('/api/users',userRoutes);
 app.use('/api/packages',packageRoutes);
 
 app.use('/api/vehicles',vehicleRoutes)
+
+
+
+app.use("/api/bookings", bookingRoutes);
 
 
 //start server
