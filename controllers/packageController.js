@@ -1,35 +1,44 @@
+// Import required modules
 const Package = require("../models/Package");
-const {mongoose} = require('mongoose');
+const mongoose = require("mongoose");
 
-// Controller for creating package (Admin only)
+/*
+|--------------------------------------------------------------------------
+| CREATE PACKAGE (Admin Only)
+|--------------------------------------------------------------------------
+| Creates a new package with title, description and base price
+*/
 const createPackage = async (req, res) => {
   try {
-    // Step 1: Extract data
+    // Step 1: Extract data from request body
     const { title, description, basePrice } = req.body;
 
-    // Step 2: Validate fields
-    // basePrice === undefined is important (0 should be allowed)
+    // Step 2: Validate required fields
+    // basePrice === undefined allows value 0
     if (!title || !description || basePrice === undefined) {
       return res.status(400).json({
         message: "All fields are required",
       });
     }
 
-    // Step 3: Validate basePrice type
-    if (typeof basePrice !== "number") {
+    // Step 3: Convert basePrice to number (handles string input like "1000")
+    const price = Number(basePrice);
+
+    // Step 4: Validate number
+    if (isNaN(price)) {
       return res.status(400).json({
-        message: "Base price must be a number",
+        message: "Base price must be a valid number",
       });
     }
 
-    // Step 4: Create package
+    // Step 5: Create package in DB
     const newPackage = await Package.create({
       title,
       description,
-      basePrice,
+      basePrice: price,
     });
 
-    // Step 5: Send response
+    // Step 6: Send success response
     return res.status(201).json({
       message: "Package created successfully",
       package: newPackage,
@@ -39,60 +48,51 @@ const createPackage = async (req, res) => {
     console.error(error);
 
     return res.status(500).json({
-      message: "Server error",
+      message: "Internal server error",
     });
   }
 };
 
 
 
-// // Controller to get all active packages (public)
-// const getPackages = async (req, res) => {
-//   try {
-//     // Step 1: Fetch active packages from DB
-//     const packages = await Package.find({ isActive: true });
-
-//     // Step 2: Send response (even if empty array)
-//     return res.status(200).json({
-//       message: "Packages fetched successfully",
-//       packages: packages,
-//     });
-
-//   } catch (error) {
-//     console.error(error);
-
-//     // Step 3: Handle server error
-//     return res.status(500).json({
-//       message: "Internal server error",
-//     });
-//   }
-// };
-
+/*
+|--------------------------------------------------------------------------
+| GET PACKAGES (Public)
+|--------------------------------------------------------------------------
+| Supports:
+| - Filtering (active/inactive)
+| - Pagination (page, limit)
+*/
 const getPackages = async (req, res) => {
   try {
     // Step 1: Extract query params
     const { active, limit, page } = req.query;
 
-    // Step 2: Build filter
+    // Step 2: Build filter object
     const filter = {};
 
     if (active !== undefined) {
+      // Convert string → boolean
       filter.isActive = active === "true";
     }
 
-    // Step 3: Convert to numbers with defaults
-    const pageNum = Number(page) || 1;
-    const limitNum = Number(limit) || 5;
+    // Step 3: Safe pagination (avoid negative or huge values)
+    const pageNum = Math.max(Number(page) || 1, 1);
+    const limitNum = Math.min(Math.max(Number(limit) || 5, 1), 50);
 
-    // Step 4: Calculate skip
+    // Step 4: Calculate skip value
     const skip = (pageNum - 1) * limitNum;
 
-    // Step 5: Fetch data
+    // Step 5: Fetch total count (for frontend pagination)
+    const total = await Package.countDocuments(filter);
+
+    // Step 6: Fetch paginated data
     const packages = await Package.find(filter)
       .skip(skip)
-      .limit(limitNum);
+      .limit(limitNum)
+      .sort({ createdAt: -1 }); // latest first
 
-    // Step 6: Handle empty result
+    // Step 7: Handle empty result
     if (packages.length === 0) {
       return res.status(200).json({
         message: "No packages found",
@@ -100,46 +100,54 @@ const getPackages = async (req, res) => {
       });
     }
 
-    // Step 7: Return response
+    // Step 8: Send response
     return res.status(200).json({
       page: pageNum,
       limit: limitNum,
-      count: packages.length,
-      packages: packages,
+      total,                 // total documents
+      count: packages.length, // current page count
+      packages,
     });
 
   } catch (error) {
     console.error(error);
+
     return res.status(500).json({
       message: "Internal server error",
     });
   }
-}
+};
 
-// Controller to get package by ID
+
+
+/*
+|--------------------------------------------------------------------------
+| GET PACKAGE BY ID
+|--------------------------------------------------------------------------
+| Fetch a single package using MongoDB ObjectId
+*/
 const getPackageById = async (req, res) => {
   try {
-    // Step 1: Get ID from params
     const { id } = req.params;
 
-    // Step 2: Validate MongoDB ID
+    // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         message: "Invalid package ID",
       });
     }
 
-    // Step 3: Fetch package
+    // Fetch package
     const foundPackage = await Package.findById(id);
 
-    // Step 4: Check if not found
+    // Check existence
     if (!foundPackage) {
       return res.status(404).json({
         message: "Package not found",
       });
     }
 
-    // Step 5: Return success response
+    // Success response
     return res.status(200).json({
       message: "Package fetched successfully",
       package: foundPackage,
@@ -154,48 +162,67 @@ const getPackageById = async (req, res) => {
   }
 };
 
-// Controller to update package (Admin only)
+
+
+/*
+|--------------------------------------------------------------------------
+| UPDATE PACKAGE (Admin Only)
+|--------------------------------------------------------------------------
+| Updates selected fields only
+*/
 const updatePackage = async (req, res) => {
   try {
-    // Step 1: Get ID from route params
     const { id } = req.params;
 
-    // Step 2: Validate MongoDB ObjectId
+    // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         message: "Invalid package ID",
       });
     }
 
-    // Step 3: Extract fields from request body
-    // Only allow specific fields to be updated
+    // Extract fields
     const { title, description, basePrice, isActive } = req.body;
 
     const updateData = {};
 
+    // Only update provided fields
     if (title !== undefined) updateData.title = title;
     if (description !== undefined) updateData.description = description;
-    if (basePrice !== undefined) updateData.basePrice = basePrice;
+
+    // Validate basePrice if provided
+    if (basePrice !== undefined) {
+      const price = Number(basePrice);
+
+      if (isNaN(price)) {
+        return res.status(400).json({
+          message: "Base price must be a valid number",
+        });
+      }
+
+      updateData.basePrice = price;
+    }
+
     if (isActive !== undefined) updateData.isActive = isActive;
 
-    // Step 4: Update package
+    // Update document
     const updatedPackage = await Package.findByIdAndUpdate(
       id,
       updateData,
       {
-        new: true,          // return updated document
-        runValidators: true // apply schema validation
+        new: true,
+        runValidators: true,
       }
     );
 
-    // Step 5: Check if package exists
+    // Check existence
     if (!updatedPackage) {
       return res.status(404).json({
         message: "Package not found",
       });
     }
 
-    // Step 6: Return success response
+    // Success response
     return res.status(200).json({
       message: "Package updated successfully",
       package: updatedPackage,
@@ -212,44 +239,45 @@ const updatePackage = async (req, res) => {
 
 
 
-// Controller to soft delete package (Admin only)
+/*
+|--------------------------------------------------------------------------
+| DELETE PACKAGE (Soft Delete)
+|--------------------------------------------------------------------------
+| Sets isActive = false instead of removing from DB
+*/
 const deletePackage = async (req, res) => {
   try {
-    // Step 1: Get ID from params
     const { id } = req.params;
 
-    // Step 2: Validate MongoDB ObjectId
+    // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         message: "Invalid package ID",
       });
     }
 
-    // Step 3: Find package
-    const packageToDelete = await Package.findById(id);
+    // Find package
+    const pkg = await Package.findById(id);
 
-    // Step 4: Check if package exists
-    if (!packageToDelete) {
+    if (!pkg) {
       return res.status(404).json({
         message: "Package not found",
       });
     }
 
-    // Step 5: Check if already inactive
-    if (!packageToDelete.isActive) {
+    if (!pkg.isActive) {
       return res.status(400).json({
         message: "Package is already inactive",
       });
     }
 
-    // Step 6: Soft delete (set isActive = false)
+    // Soft delete
     const updatedPackage = await Package.findByIdAndUpdate(
       id,
       { isActive: false },
       { new: true }
     );
 
-    // Step 7: Return response
     return res.status(200).json({
       message: "Package deleted successfully",
       package: updatedPackage,
@@ -264,43 +292,46 @@ const deletePackage = async (req, res) => {
   }
 };
 
+
+
+/*
+|--------------------------------------------------------------------------
+| RESTORE PACKAGE
+|--------------------------------------------------------------------------
+| Re-activates a previously soft-deleted package
+*/
 const restorePackage = async (req, res) => {
   try {
-    // Step 1: Get ID from params
     const { id } = req.params;
 
-    // Step 2: Validate MongoDB ObjectId
+    // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         message: "Invalid package ID",
       });
     }
 
-    // Step 3: Find package
-    const packageToRestore = await Package.findById(id);
+    const pkg = await Package.findById(id);
 
-    // Step 4: Check existence
-    if (!packageToRestore) {
+    if (!pkg) {
       return res.status(404).json({
         message: "Package not found",
       });
     }
 
-    // Step 5: Check if already active
-    if (packageToRestore.isActive) {
+    if (pkg.isActive) {
       return res.status(400).json({
         message: "Package is already active",
       });
     }
 
-    // Step 6: Restore package
+    // Restore
     const restoredPackage = await Package.findByIdAndUpdate(
       id,
       { isActive: true },
       { new: true, runValidators: true }
     );
 
-    // Step 7: Return response
     return res.status(200).json({
       message: "Package restored successfully",
       package: restoredPackage,
@@ -316,4 +347,12 @@ const restorePackage = async (req, res) => {
 };
 
 
-module.exports = { createPackage ,getPackages,getPackageById,updatePackage,deletePackage,restorePackage};
+// Export all controllers
+module.exports = {
+  createPackage,
+  getPackages,
+  getPackageById,
+  updatePackage,
+  deletePackage,
+  restorePackage,
+};

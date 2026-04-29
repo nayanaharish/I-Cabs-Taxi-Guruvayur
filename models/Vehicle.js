@@ -1,5 +1,3 @@
-// models/Vehicle.js
-
 const mongoose = require("mongoose");
 
 const vehicleSchema = new mongoose.Schema(
@@ -11,15 +9,33 @@ const vehicleSchema = new mongoose.Schema(
 
     type: {
       type: String,
-      enum: ["sedan", "suv", "luxury"], // restrict allowed values
+      enum: ["sedan", "suv", "luxury"],
       required: true,
     },
 
     priceMultiplier: {
       type: Number,
       required: true,
-      min: 1, // cannot be less than base price
+      min: 1,
     },
+
+    baseFare: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    seatingCapacity: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+
+    image: {
+      type: String,
+    },
+
+    amenities: [String],
 
     isActive: {
       type: Boolean,
